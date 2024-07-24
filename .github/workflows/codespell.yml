@@ -1,9 +1,7 @@
 name: Codespell
 
 on:
-  pull_request:
-    branches:
-      - master
+  push
 
 jobs:
   codespell:
