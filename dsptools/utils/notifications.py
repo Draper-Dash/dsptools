@@ -133,7 +133,6 @@ def send_email(
         }
 
         response = requests.post(graph_endpoint, headers=headers, json=email_msg)
-
         if response.status_code != 202:
             raise Exception(
                 f"Failed to send email. Status code: {response.status_code}. Detail: {response.json()}"

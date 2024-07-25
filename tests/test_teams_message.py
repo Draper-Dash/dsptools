@@ -1,4 +1,3 @@
-
 import pytest
 import pymsteams
 from dsptools.utils.notifications import send_teams_message
@@ -56,7 +55,9 @@ class TestSendTeamsMessage:
         mock_connectorcard = mocker.patch("pymsteams.connectorcard")
         mock_teams_message = mocker.Mock()
         mock_connectorcard.return_value = mock_teams_message
-        mock_teams_message.send.side_effect = pymsteams.TeamsWebhookException("Failed to send message")
+        mock_teams_message.send.side_effect = pymsteams.TeamsWebhookException(
+            "Failed to send message"
+        )
 
         with pytest.raises(TeamsMessageError) as exc_info:
             send_teams_message(webhook_url, message)
