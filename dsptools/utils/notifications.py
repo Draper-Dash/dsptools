@@ -3,6 +3,10 @@ from __future__ import annotations
 from typing import List, Optional
 import yaml
 import smtplib
+import requests
+import msal
+import base64
+import os
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.mime.application import MIMEApplication
@@ -12,42 +16,42 @@ from dsptools.errors.execution import TeamsMessageError
 
 
 def send_email(
+    email_clientid: str,
+    email_secret: str,
+    email_tenantid: str,
     emails: List[str],
     subject: str,
     message: str,
     attachment: Optional[str] = None,
-    email_inbox: str = "default_placeholder",
-    email_pwd: str = "default_placeholder",
-    email_server_host: str = "smtp.office365.com",
-    email_server_port: int = 587,
+    sender: str = "dsp-notifications@realworld.health",
 ) -> None:
     # TODO implement keyvalut and get rid of inbox and pwd params
     """
-    Send an email with an optional attachment to a list of recipients.
+    Send an email with an optional attachment to a list of recipients using Microsoft Graph API.
 
     Args:
+        email_clientid: The Client ID of the Service Principal being used to send the email.
+        email_secret: The Client Secret of the Service Principal being used to send the email.
+        email_tenantid The Tenant ID of the Service Principal being used to send the email.
         emails (List[str]): List of email addresses to send the email to.
         subject (str): The email subject.
         message (str): The email message content (HTML).
         attachment (str, optional): Path to the attachment file (PDF, DOC, CSV, TXT, or LOG). Default is None.
-        email_inbox (str, optional): The sender's email address.
-        email_pwd (str, optional): The sender's email password.
-        email_server_host (str, optional): The SMTP server host. Default is "smtp.office365.com".
-        email_server_port (int, optional): The SMTP server port. Default is 587.
+        sender (str, optional): The sender's email address.
 
     Raises:
-        smtplib.SMTPException: If there is an issue with the SMTP server connection.
-        FileNotFoundError: If the attachment file is not found.
-        ValueError: If the attachment file type is not supported.
+        EmailAttachmentError: If the attachment file type is not supported.
+        Exception: If there is an issue with sending the email.
 
     Example:
         send_email(
+            email_clientid="your_client_id",
+            email_secret="your_client_secret",
+            email_tenantid="your_tenant_id",
             emails=["recipient@example.com"],
             subject="Important Report",
             message="<html><body>...</body></html>",
-            attachment="report.pdf",
-            email_inbox="sender@example.com",
-            email_pwd="password123"
+            attachment="report.pdf"
         )
     """
     supported_attachment_types = (".pdf", ".doc", ".csv", ".txt", ".log")
@@ -57,36 +61,87 @@ def send_email(
             "Unsupported attachment file type. Supported types: PDF, DOC, CSV, TXT, LOG"
         )
 
-    for emailto in emails:
-        msg = MIMEMultipart()
-        msg["From"] = email_inbox
-        msg["To"] = emailto
-        msg["Subject"] = subject
-        msg.attach(MIMEText(message, "html"))
+    # MSAL configuration
+    authority = f"https://login.microsoftonline.com/{email_tenantid}"
+    scopes = ["https://graph.microsoft.com/.default"]
 
+    # Create MSAL app
+    app = msal.ConfidentialClientApplication(
+        email_clientid, authority=authority, client_credential=email_secret
+    )
+
+    # Acquire token
+    result = app.acquire_token_silent(scopes, account=None)
+    if not result:
+        result = app.acquire_token_for_client(scopes=scopes)
+
+    if "access_token" in result:
+        access_token = result["access_token"]
+
+        recipients = [{"emailAddress": {"address": email}} for email in emails]
+
+        # Construct the email message
+        email_msg = {
+            "message": {
+                "subject": subject,
+                "body": {"contentType": "html", "content": message},
+                "toRecipients": recipients,
+                "attachments": [],
+            },
+            "saveToSentItems": "true",
+        }
+
+        # Add attachment if provided
         if attachment:
             try:
                 with open(attachment, "rb") as file:
-                    attach = MIMEApplication(
-                        file.read(), _subtype=attachment.split(".")[-1]
+                    attachment_content = file.read()
+                    encoded_attachment = base64.b64encode(attachment_content).decode(
+                        "utf-8"
                     )
-                    attach.add_header(
-                        "Content-Disposition",
-                        "attachment",
-                        filename=attachment.replace("logs", ""),
+                    attachment_name = os.path.basename(attachment)
+                    attachment_type = "application/octet-stream"  # Default MIME type
+
+                    # Determine the MIME type based on the file extension
+                    if attachment.endswith(".pdf"):
+                        attachment_type = "application/pdf"
+                    elif attachment.endswith(".doc"):
+                        attachment_type = "application/msword"
+                    elif attachment.endswith(".csv"):
+                        attachment_type = "text/csv"
+                    elif attachment.endswith(".txt"):
+                        attachment_type = "text/plain"
+                    elif attachment.endswith(".log"):
+                        attachment_type = "text/plain"
+
+                    email_msg["message"]["attachments"].append(
+                        {
+                            "@odata.type": "#microsoft.graph.fileAttachment",
+                            "name": attachment_name,
+                            "contentType": attachment_type,
+                            "contentBytes": encoded_attachment,
+                        }
                     )
-                    msg.attach(attach)
             except FileNotFoundError:
                 raise FileNotFoundError("Attachment file not found")
 
-        try:
-            server = smtplib.SMTP(email_server_host, email_server_port)
-            server.starttls()
-            server.login(email_inbox, email_pwd)
-            server.sendmail(email_inbox, emailto, msg.as_string())
-            server.quit()
-        except smtplib.SMTPException as e:
-            raise smtplib.SMTPException(f"Error sending email: {str(e)}")
+        # Send the email using Graph API
+        graph_endpoint = f"https://graph.microsoft.com/v1.0/users/{sender}/sendMail"
+        headers = {
+            "Authorization": f"Bearer {access_token}",
+            "Content-Type": "application/json",
+        }
+
+        response = requests.post(graph_endpoint, headers=headers, json=email_msg)
+
+        if response.status_code != 202:
+            raise Exception(
+                f"Failed to send email. Status code: {response.status_code}"
+            )
+    else:
+        raise Exception(
+            f"Failed to acquire token for email \n{result.get('error')} \n{result.get('error_description')}"
+        )
 
 
 def send_teams_message(channel: str, message: str) -> None:
