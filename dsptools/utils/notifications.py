@@ -136,7 +136,7 @@ def send_email(
 
         if response.status_code != 202:
             raise Exception(
-                f"Failed to send email. Status code: {response.status_code}"
+                f"Failed to send email. Status code: {response.status_code}. Detail: {response.json()}"
             )
     else:
         raise Exception(
