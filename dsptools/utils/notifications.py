@@ -14,6 +14,7 @@ import pymsteams  # type: ignore[import-not-found]
 from dsptools.errors.data import EmailAttachmentError
 from dsptools.errors.execution import TeamsMessageError
 
+
 def send_email(
     email_clientid: str,
     email_secret: str,
@@ -66,9 +67,7 @@ def send_email(
 
     # Create MSAL app
     app = msal.ConfidentialClientApplication(
-        email_clientid,
-        authority=authority,
-        client_credential=email_secret
+        email_clientid, authority=authority, client_credential=email_secret
     )
 
     # Acquire token
@@ -85,14 +84,11 @@ def send_email(
         email_msg = {
             "message": {
                 "subject": subject,
-                "body": {
-                    "contentType": "html",
-                    "content": message
-                },
+                "body": {"contentType": "html", "content": message},
                 "toRecipients": recipients,
-                "attachments": []
+                "attachments": [],
             },
-            "saveToSentItems": "true"
+            "saveToSentItems": "true",
         }
 
         # Add attachment if provided
@@ -100,7 +96,9 @@ def send_email(
             try:
                 with open(attachment, "rb") as file:
                     attachment_content = file.read()
-                    encoded_attachment = base64.b64encode(attachment_content).decode('utf-8')
+                    encoded_attachment = base64.b64encode(attachment_content).decode(
+                        "utf-8"
+                    )
                     attachment_name = os.path.basename(attachment)
                     attachment_type = "application/octet-stream"  # Default MIME type
 
@@ -116,12 +114,14 @@ def send_email(
                     elif attachment.endswith(".log"):
                         attachment_type = "text/plain"
 
-                    email_msg["message"]["attachments"].append({
-                        "@odata.type": "#microsoft.graph.fileAttachment",
-                        "name": attachment_name,
-                        "contentType": attachment_type,
-                        "contentBytes": encoded_attachment
-                    })
+                    email_msg["message"]["attachments"].append(
+                        {
+                            "@odata.type": "#microsoft.graph.fileAttachment",
+                            "name": attachment_name,
+                            "contentType": attachment_type,
+                            "contentBytes": encoded_attachment,
+                        }
+                    )
             except FileNotFoundError:
                 raise FileNotFoundError("Attachment file not found")
 
@@ -129,15 +129,20 @@ def send_email(
         graph_endpoint = f"https://graph.microsoft.com/v1.0/users/{sender}/sendMail"
         headers = {
             "Authorization": f"Bearer {access_token}",
-            "Content-Type": "application/json"
+            "Content-Type": "application/json",
         }
 
         response = requests.post(graph_endpoint, headers=headers, json=email_msg)
 
         if response.status_code != 202:
-            raise Exception(f"Failed to send email. Status code: {response.status_code}")
+            raise Exception(
+                f"Failed to send email. Status code: {response.status_code}"
+            )
     else:
-        raise Exception(f"Failed to acquire token for email \n{result.get('error')} \n{result.get('error_description')}")
+        raise Exception(
+            f"Failed to acquire token for email \n{result.get('error')} \n{result.get('error_description')}"
+        )
+
 
 def send_teams_message(channel: str, message: str) -> None:
     """
