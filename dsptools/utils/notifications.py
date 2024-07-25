@@ -144,7 +144,7 @@ def send_email(
         )
 
 
-def send_teams_message(channel: str, message: str) -> None:
+def send_teams_message(webhook_url: str, message: str) -> None:
     """
     Send a message to a Microsoft Teams channel using a webhook.
 
@@ -164,21 +164,7 @@ def send_teams_message(channel: str, message: str) -> None:
             print(f"Failed to send Teams message: {e}")
     """
     try:
-        # TODO change webhook config from yaml to keyvault
-        with open("teams_config.yml", "r") as file:
-            channels = yaml.safe_load(file)
-        if channel not in channels.keys():
-            raise TeamsMessageError(
-                f"The specified '{channel}' channel does not exist. Allowed channels: {', '.join(channels.keys())}"
-            )
-
-        webhook = channels[channel]
-        if not webhook:
-            raise TeamsMessageError(
-                f"No webhook configured for the '{channel}' channel. Contact an administrator"
-            )
-
-        teams_message = pymsteams.connectorcard(webhook)
+        teams_message = pymsteams.connectorcard(webhook_url)
         teams_message.text(message)
         teams_message.send()
 
