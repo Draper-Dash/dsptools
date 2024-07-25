@@ -6,3 +6,4 @@ setuptools==68.2.2
 SQLAlchemy==1.4
 pyodbc >= 5.0.0
 pytest-mock==3.14.0
+msal
