@@ -1,6 +1,6 @@
 [project]
 name = "rwhealth-dsptools"
-version = "0.1.0"
+version = "0.1.1"
 description = "A set of commonly used ETL functions"
 readme = "README.md"
 requires-python = ">=3.8"
