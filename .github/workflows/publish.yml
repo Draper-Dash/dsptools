@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     environment:
       name: pypi
-      url: https://pypi.org/p/dsptools
+      url: https://pypi.org/p/dsptools-rwhealth
     permissions:
       id-token: write
     steps:
