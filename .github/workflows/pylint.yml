@@ -2,8 +2,7 @@ name: Linting
 
 on:
   pull_request:
-    branches:
-      - master
+    branches: [ "main" ]
 
 jobs:
   build:
@@ -23,9 +22,11 @@ jobs:
         pip install pylint
         pip install mypy
         pip install -r requirements.txt
-    - name: Analyzing the code with pylint
+        mypy --install-types --non-interactive dsptools
+    - name: Run PyLint
       run: |
         pylint $(git ls-files '*.py')
-    - name: Analyzing code with mypy
+
+    - name: Run mypy
       run: |
-        mypy . --install-types
+        mypy dsptools

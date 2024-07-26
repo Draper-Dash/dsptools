@@ -9,3 +9,6 @@ __pycache__/
 .tox
 teams_config.yml
 .mypy_cache
+.vscode/settings.json
+*.pdf
+*.ipynb

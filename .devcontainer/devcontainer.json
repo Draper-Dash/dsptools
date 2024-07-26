@@ -1,0 +1,26 @@
+{
+    "name": "DSPTools Py310",
+    "dockerFile": "Dockerfile",
+    "context": "..",
+    "customizations": {
+        "vscode": {
+            "settings": {
+                "terminal.integrated.shell.linux": "/bin/bash"
+            },
+            "extensions": [
+                "ms-python.python",
+                "editorconfig.editorconfig",
+                "ms-python.vscode-pylance",
+                "ms-python.pyright",
+                "ms-python.black",
+                "ms-toolsai.jupyter",
+                "ms-toolsai.jupyter-keymap",
+                "ms-toolsai.jupyter-renderers",
+                "codium.codium"
+            ]
+        }
+    },
+    "runArgs": [
+        "--user=root"
+    ]
+}
