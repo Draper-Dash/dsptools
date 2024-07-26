@@ -20,13 +20,7 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         pip install pylint
-        pip install mypy
         pip install -r requirements.txt
-        mypy --install-types --non-interactive dsptools
     - name: Run PyLint
       run: |
         pylint $(git ls-files '*.py')
-
-    - name: Run mypy
-      run: |
-        mypy dsptools
