@@ -1,9 +1,7 @@
-azure-storage-blob==12.8.1
-paramiko==3.3.1
+azure-storage-blob==12.21.0
 pymsteams==0.2.2
 PyYAML==6.0.1
 setuptools==68.2.2
-SQLAlchemy==1.4
+SQLAlchemy >1.4,<2.0.31
 pyodbc >= 5.0.0
-pytest-mock==3.14.0
-msal
+msal==1.30.0
