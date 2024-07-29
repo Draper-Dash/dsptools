@@ -1,15 +1,10 @@
 # pylint: skip-file
 from __future__ import annotations
 from typing import List, Optional
-import yaml
-import smtplib
 import requests
 import msal
 import base64
 import os
-from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText
-from email.mime.application import MIMEApplication
 import pymsteams  # type: ignore[import-not-found]
 from dsptools.errors.data import EmailAttachmentError
 from dsptools.errors.execution import TeamsMessageError
@@ -22,7 +17,7 @@ def send_email(
     emails: List[str],
     subject: str,
     message: str,
-    attachment: Optional[str] = None,
+    attachments: Optional[List[str]] = None,
     sender: str = "dsp-notifications@realworld.health",
 ) -> None:
     # TODO implement keyvalut and get rid of inbox and pwd params
@@ -54,12 +49,22 @@ def send_email(
             attachment="report.pdf"
         )
     """
-    supported_attachment_types = (".pdf", ".doc", ".csv", ".txt", ".log")
+    supported_attachment_types = (
+        ".pdf",
+        ".doc",
+        ".csv",
+        ".txt",
+        ".log",
+        ".jpg",
+        ".png",
+    )
 
-    if attachment and not attachment.endswith(supported_attachment_types):
-        raise EmailAttachmentError(
-            "Unsupported attachment file type. Supported types: PDF, DOC, CSV, TXT, LOG"
-        )
+    if attachments:
+        for attachment in attachments:
+            if not attachment.endswith(supported_attachment_types):
+                raise EmailAttachmentError(
+                    "Unsupported attachment file type. Supported types: PDF, DOC, CSV, TXT, LOG, JPG, PNG"
+                )
 
     # MSAL configuration
     authority = f"https://login.microsoftonline.com/{email_tenantid}"
@@ -92,38 +97,51 @@ def send_email(
         }
 
         # Add attachment if provided
-        if attachment:
-            try:
-                with open(attachment, "rb") as file:
-                    attachment_content = file.read()
-                    encoded_attachment = base64.b64encode(attachment_content).decode(
-                        "utf-8"
+        if attachments:
+            for attachment in attachments:
+                if not os.path.isfile(attachment):
+                    raise EmailAttachmentError(
+                        f"Attachment file {attachment} not found"
                     )
-                    attachment_name = os.path.basename(attachment)
-                    attachment_type = "application/octet-stream"  # Default MIME type
+                try:
+                    with open(attachment, "rb") as file:
+                        attachment_content = file.read()
+                        encoded_attachment = base64.b64encode(
+                            attachment_content
+                        ).decode("utf-8")
+                        attachment_name = os.path.basename(attachment)
+                        attachment_type = (
+                            "application/octet-stream"  # Default MIME type
+                        )
 
-                    # Determine the MIME type based on the file extension
-                    if attachment.endswith(".pdf"):
-                        attachment_type = "application/pdf"
-                    elif attachment.endswith(".doc"):
-                        attachment_type = "application/msword"
-                    elif attachment.endswith(".csv"):
-                        attachment_type = "text/csv"
-                    elif attachment.endswith(".txt"):
-                        attachment_type = "text/plain"
-                    elif attachment.endswith(".log"):
-                        attachment_type = "text/plain"
+                        # Determine the MIME type based on the file extension
+                        if attachment.endswith(".pdf"):
+                            attachment_type = "application/pdf"
+                        elif attachment.endswith(".doc"):
+                            attachment_type = "application/msword"
+                        elif attachment.endswith(".csv"):
+                            attachment_type = "text/csv"
+                        elif attachment.endswith(".txt"):
+                            attachment_type = "text/plain"
+                        elif attachment.endswith(".log"):
+                            attachment_type = "text/plain"
+                        elif attachment_type.endswith(
+                            ".jpg"
+                        ) or attachment_type.endswith(".jpeg"):
+                            attachment_type = "image/jpeg"
+                        elif attachment_type.endswith(".png"):
+                            attachment_type = "image/png"
 
-                    email_msg["message"]["attachments"].append(
-                        {
-                            "@odata.type": "#microsoft.graph.fileAttachment",
-                            "name": attachment_name,
-                            "contentType": attachment_type,
-                            "contentBytes": encoded_attachment,
-                        }
-                    )
-            except FileNotFoundError:
-                raise FileNotFoundError("Attachment file not found")
+                        email_msg["message"]["attachments"].append(
+                            {
+                                "@odata.type": "#microsoft.graph.fileAttachment",
+                                "name": attachment_name,
+                                "contentType": attachment_type,
+                                "contentBytes": encoded_attachment,
+                            }
+                        )
+                except FileNotFoundError:
+                    raise FileNotFoundError("Attachment file not found")
 
         # Send the email using Graph API
         graph_endpoint = f"https://graph.microsoft.com/v1.0/users/{sender}/sendMail"

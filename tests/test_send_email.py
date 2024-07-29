@@ -49,7 +49,7 @@ class TestSendEmail:
                 emails=["recipient@example.com"],
                 subject="Test Subject",
                 message="<html><body>Test Message</body></html>",
-                attachment="unsupported_file_type.exe",
+                attachments=["unsupported_file_type.exe"],
             )
 
     # Successfully send an email with a supported attachment
@@ -69,7 +69,7 @@ class TestSendEmail:
             emails=["test@example.com"],
             subject="Test Subject",
             message="<html><body>Test Message</body></html>",
-            attachment="test_attachment.pdf",
+            attachments=["test_attachment.pdf"],
         )
 
         # Assertions
