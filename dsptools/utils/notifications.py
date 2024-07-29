@@ -56,6 +56,7 @@ def send_email(
         ".txt",
         ".log",
         ".jpg",
+        ".jpeg",
         ".png",
     )
 
@@ -63,7 +64,7 @@ def send_email(
         for attachment in attachments:
             if not attachment.endswith(supported_attachment_types):
                 raise EmailAttachmentError(
-                    "Unsupported attachment file type. Supported types: PDF, DOC, CSV, TXT, LOG, JPG, PNG"
+                    "Unsupported attachment file type. Supported types: PDF, DOC, CSV, TXT, LOG, JPG, JPEG, PNG"
                 )
 
     # MSAL configuration
