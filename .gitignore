@@ -10,5 +10,4 @@ __pycache__/
 teams_config.yml
 .mypy_cache
 .vscode/settings.json
-*.pdf
 *.ipynb
