@@ -1,7 +1,7 @@
-azure-storage-blob==12.21.0
+azure-storage-blob
 pymsteams==0.2.2
 PyYAML==6.0.1
 setuptools==68.2.2
-SQLAlchemy >1.4,<2.0.31
+SQLAlchemy >1.4
 pyodbc >= 5.0.0
-msal==1.30.0
+msal
