@@ -17,7 +17,8 @@ dependencies = [
     "setuptools==68.2.2",
     "SQLAlchemy>1.4",
     "pyodbc>=5.0.0",
-    "msal"
+    "msal",
+    "bcpandas==2.6.3",
 ]
 
 [project.optional-dependencies]
